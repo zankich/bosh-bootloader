@@ -25,7 +25,7 @@ locals {
 
 resource "aws_subnet" "iso_subnets" {
   count             = "${local.iso_az_count}"
-  vpc_id            = "${aws_vpc.vpc.id}"
+  vpc_id            = "${local.vpc_id}"
   cidr_block        = "${cidrsubnet(var.vpc_cidr, 4, count.index + length(var.availability_zones) + 1)}"
   availability_zone = "${element(var.availability_zones, count.index)}"
 
@@ -83,7 +83,7 @@ resource "aws_elb" "iso_router_lb" {
 
 resource "aws_security_group" "iso_security_group" {
   count  = "${var.isolation_segments}"
-  vpc_id = "${aws_vpc.vpc.id}"
+  vpc_id = "${local.vpc_id}"
 
   description = "Private isolation segment"
 
@@ -94,7 +94,7 @@ resource "aws_security_group" "iso_security_group" {
 
 resource "aws_security_group" "iso_shared_security_group" {
   count  = "${var.isolation_segments}"
-  vpc_id = "${aws_vpc.vpc.id}"
+  vpc_id = "${local.vpc_id}"
 
   description = "Shared isolation segments"
 

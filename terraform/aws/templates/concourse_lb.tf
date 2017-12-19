@@ -1,6 +1,6 @@
 resource "aws_security_group" "concourse_lb_internal_security_group" {
   description = "Concourse Internal"
-  vpc_id      = "${aws_vpc.vpc.id}"
+  vpc_id      = "${local.vpc_id}"
 
   tags {
     Name = "${var.env_id}-concourse-lb-internal-security-group"
@@ -68,7 +68,7 @@ resource "aws_lb_target_group" "concourse_lb_80" {
   name     = "${var.short_env_id}-concourse80"
   port     = 80
   protocol = "TCP"
-  vpc_id   = "${aws_vpc.vpc.id}"
+  vpc_id   = "${local.vpc_id}"
 
   health_check {
     healthy_threshold   = 10
@@ -93,7 +93,7 @@ resource "aws_lb_target_group" "concourse_lb_2222" {
   name     = "${var.short_env_id}-concourse2222"
   port     = 2222
   protocol = "TCP"
-  vpc_id   = "${aws_vpc.vpc.id}"
+  vpc_id   = "${local.vpc_id}"
 }
 
 resource "aws_lb_listener" "concourse_lb_443" {
@@ -111,7 +111,7 @@ resource "aws_lb_target_group" "concourse_lb_443" {
   name     = "${var.short_env_id}-concourse443"
   port     = 443
   protocol = "TCP"
-  vpc_id   = "${aws_vpc.vpc.id}"
+  vpc_id   = "${local.vpc_id}"
 }
 
 output "concourse_lb_internal_security_group" {
