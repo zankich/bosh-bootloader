@@ -557,7 +557,6 @@ variable "vpc_cidr" {
   default = "10.0.0.0/16"
 }
 
-
 resource "aws_internet_gateway" "ig" {
   vpc_id = "${local.vpc_id}"
 }

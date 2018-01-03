@@ -151,7 +151,7 @@ variable "nat_ami_map" {
 
 resource "aws_security_group" "nat_security_group" {
   description = "NAT"
-  vpc_id      = "${aws_vpc.vpc.id}"
+  vpc_id      = "${local.vpc_id}"
 
   ingress = []
   egress  = []
@@ -244,12 +244,12 @@ provider "aws" {
 }
 
 resource "aws_default_security_group" "default_security_group" {
-  vpc_id = "${aws_vpc.vpc.id}"
+  vpc_id = "${local.vpc_id}"
 }
 
 resource "aws_security_group" "internal_security_group" {
   description = "Internal"
-  vpc_id      = "${aws_vpc.vpc.id}"
+  vpc_id      = "${local.vpc_id}"
 
   tags {
     Name = "${var.env_id}-internal-security-group"
@@ -311,7 +311,7 @@ variable "bosh_inbound_cidr" {
 
 resource "aws_security_group" "bosh_security_group" {
   description = "Bosh"
-  vpc_id      = "${aws_vpc.vpc.id}"
+  vpc_id      = "${local.vpc_id}"
 
   tags {
     Name = "${var.env_id}-bosh-security-group"
@@ -387,7 +387,7 @@ resource "aws_security_group_rule" "bosh_security_group_rule_allow_internet" {
 
 resource "aws_security_group" "jumpbox" {
   description = "automatically created jumpbox by BBL"
-  vpc_id      = "${aws_vpc.vpc.id}"
+  vpc_id      = "${local.vpc_id}"
 
   tags {
     Name = "${var.env_id}-jumpbox-security-group"
@@ -466,7 +466,7 @@ output "internal_cidr" {
 }
 
 resource "aws_subnet" "bosh_subnet" {
-  vpc_id     = "${aws_vpc.vpc.id}"
+  vpc_id     = "${local.vpc_id}"
   cidr_block = "${cidrsubnet(var.vpc_cidr, 8, 0)}"
 
   tags {
@@ -475,7 +475,7 @@ resource "aws_subnet" "bosh_subnet" {
 }
 
 resource "aws_route_table" "bosh_route_table" {
-  vpc_id = "${aws_vpc.vpc.id}"
+  vpc_id = "${local.vpc_id}"
 }
 
 resource "aws_route" "bosh_route_table" {
@@ -503,7 +503,7 @@ variable "availability_zones" {
 
 resource "aws_subnet" "internal_subnets" {
   count             = "${length(var.availability_zones)}"
-  vpc_id            = "${aws_vpc.vpc.id}"
+  vpc_id            = "${local.vpc_id}"
   cidr_block        = "${cidrsubnet(var.vpc_cidr, 4, count.index+1)}"
   availability_zone = "${element(var.availability_zones, count.index)}"
 
@@ -517,7 +517,7 @@ resource "aws_subnet" "internal_subnets" {
 }
 
 resource "aws_route_table" "internal_route_table" {
-  vpc_id = "${aws_vpc.vpc.id}"
+  vpc_id = "${local.vpc_id}"
 }
 
 resource "aws_route" "internal_route_table" {
@@ -557,28 +557,18 @@ variable "vpc_cidr" {
   default = "10.0.0.0/16"
 }
 
-resource "aws_vpc" "vpc" {
-  cidr_block           = "${var.vpc_cidr}"
-  instance_tenancy     = "default"
-  enable_dns_hostnames = true
-
-  tags {
-    Name = "${var.env_id}-vpc"
-  }
-}
-
 resource "aws_internet_gateway" "ig" {
-  vpc_id = "${aws_vpc.vpc.id}"
+  vpc_id = "${local.vpc_id}"
 }
 
 output "vpc_id" {
-  value = "${aws_vpc.vpc.id}"
+  value = "${local.vpc_id}"
 }
 
 resource "aws_flow_log" "bbl" {
   log_group_name = "${aws_cloudwatch_log_group.bbl.name}"
   iam_role_arn   = "${aws_iam_role.flow_logs.arn}"
-  vpc_id         = "${aws_vpc.vpc.id}"
+  vpc_id         = "${local.vpc_id}"
   traffic_type   = "REJECT"
 }
 
@@ -638,9 +628,31 @@ output "kms_key_arn" {
   value = "${aws_kms_key.kms_key.arn}"
 }
 
+variable "existing_vpc_id" {
+  type        = "string"
+  default     = ""
+  description = "Optionally use an existing vpc"
+}
+
+locals {
+  vpc_count = "${length(var.existing_vpc_id) > 0 ? 0 : 1}"
+  vpc_id    = "${length(var.existing_vpc_id) > 0 ? var.existing_vpc_id : join(" ", aws_vpc.vpc.*.id)}"
+}
+
+resource "aws_vpc" "vpc" {
+  count                = "${local.vpc_count}"
+  cidr_block           = "${var.vpc_cidr}"
+  instance_tenancy     = "default"
+  enable_dns_hostnames = true
+
+  tags {
+    Name = "${var.env_id}-vpc"
+  }
+}
+
 resource "aws_subnet" "lb_subnets" {
   count             = "${length(var.availability_zones)}"
-  vpc_id            = "${aws_vpc.vpc.id}"
+  vpc_id            = "${local.vpc_id}"
   cidr_block        = "${cidrsubnet(var.vpc_cidr, 8, count.index+2)}"
   availability_zone = "${element(var.availability_zones, count.index)}"
 
@@ -654,7 +666,7 @@ resource "aws_subnet" "lb_subnets" {
 }
 
 resource "aws_route_table" "lb_route_table" {
-  vpc_id = "${aws_vpc.vpc.id}"
+  vpc_id = "${local.vpc_id}"
 }
 
 resource "aws_route" "lb_route_table" {
@@ -683,7 +695,7 @@ output "lb_subnet_cidrs" {
 
 resource "aws_security_group" "concourse_lb_internal_security_group" {
   description = "Concourse Internal"
-  vpc_id      = "${aws_vpc.vpc.id}"
+  vpc_id      = "${local.vpc_id}"
 
   tags {
     Name = "${var.env_id}-concourse-lb-internal-security-group"
@@ -751,7 +763,7 @@ resource "aws_lb_target_group" "concourse_lb_80" {
   name     = "${var.short_env_id}-concourse80"
   port     = 80
   protocol = "TCP"
-  vpc_id   = "${aws_vpc.vpc.id}"
+  vpc_id   = "${local.vpc_id}"
 
   health_check {
     healthy_threshold   = 10
@@ -776,7 +788,7 @@ resource "aws_lb_target_group" "concourse_lb_2222" {
   name     = "${var.short_env_id}-concourse2222"
   port     = 2222
   protocol = "TCP"
-  vpc_id   = "${aws_vpc.vpc.id}"
+  vpc_id   = "${local.vpc_id}"
 }
 
 resource "aws_lb_listener" "concourse_lb_443" {
@@ -794,7 +806,7 @@ resource "aws_lb_target_group" "concourse_lb_443" {
   name     = "${var.short_env_id}-concourse443"
   port     = 443
   protocol = "TCP"
-  vpc_id   = "${aws_vpc.vpc.id}"
+  vpc_id   = "${local.vpc_id}"
 }
 
 output "concourse_lb_internal_security_group" {
