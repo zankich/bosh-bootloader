@@ -25,8 +25,8 @@ Steps to deploy cfcr with bbl:
    ```
    bosh deploy -d cfcr ${KD}/manifests/cfcr.yml \
    -o ${KD}/manifests/ops-files/iaas/aws/cloud-provider.yml \
-   -o cfcr-ops.yml \
-   -l vars/cloud-config-vars.yml
+   -o ${KD}/manifests/ops-files/iaas/aws/lb.yml \
+   -l <(bbl outputs)
    ```
 
 1. Configure kubectl

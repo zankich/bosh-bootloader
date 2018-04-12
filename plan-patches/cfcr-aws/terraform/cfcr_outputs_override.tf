@@ -1,9 +1,9 @@
-output "kubernetes-cluster-tag" {
-  value = "${random_id.kubernetes-cluster-tag.b64}"
+output "kubernetes_cluster_tag" {
+  value = "${random_id.kubernetes_cluster_tag.b64}"
 }
 
 output "cfcr_master_target_pool" {
-   value = "${aws_elb.api.name}"
+  value = "${aws_elb.api.name}"
 }
 
 output "master_lb_ip_address" {

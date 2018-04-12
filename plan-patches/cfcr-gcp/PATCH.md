@@ -26,7 +26,6 @@ Steps to deploy cfcr with bbl:
    ```
    bosh deploy -d cfcr ${KD}/manifests/cfcr.yml \
    -o ${KD}/manifests/ops-files/iaas/gcp/cloud-provider.yml \
-   -o cfcr-ops.yml \
    -l <(bosh int cfcr-vars-template.yml -l <(bbl outputs))
    ```
 
@@ -35,7 +34,6 @@ Steps to deploy cfcr with bbl:
    export CFCRC=~/go/github.com/starkandwayne/cfcr-compiled-deployment
    bosh deploy -d cfcr ${CFCRC}/cfcr.yml \
    -o ${CFCRC}/ops-files/iaas/gcp/cloud-provider.yml \
-   -o cfcr-ops.yml \
    -l <(bosh int cfcr-vars-template.yml -l <(bbl outputs))
    ```
 

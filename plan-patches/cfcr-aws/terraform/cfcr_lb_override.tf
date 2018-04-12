@@ -1,11 +1,11 @@
-resource "random_id" "kubernetes-cluster-tag" {
+resource "random_id" "kubernetes_cluster_tag" {
   byte_length = 16
 }
 
 resource "aws_subnet" "bosh_subnet" {
   tags {
     Name              = "${var.env_id}-bosh-subnet"
-    KubernetesCluster = "${random_id.kubernetes-cluster-tag.b64}"
+    KubernetesCluster = "${random_id.kubernetes_cluster_tag.b64}"
   }
 }
 

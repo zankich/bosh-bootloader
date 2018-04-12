@@ -2,5 +2,5 @@
 iaas: gcp
 deployment_name: cfcr
 network: ((network))
-project_id: ((gcp_project_id))
+project_id: ((project_id))
 director_name: ((director_name))

@@ -1,16 +1,19 @@
+# we might be able to use the kubo-deployment cloud-config ops files if they merge them...
 - type: replace
   path: /vm_extensions/-
   value:
-    name: cfcr-master-cloud-properties
+    name: cfcr-master-network-properties
     cloud_properties:
       target_pool: ((cfcr_master_target_pool))
-      service_account: ((cfcr_master_service_account_address))
       tags:
       - ((cfcr_master_target_pool))
 
 - type: replace
-  path: /vm_extensions/-
+  path: /vm_extensions/name=cfcr-master-iam-properties?/cloud_properties/
   value:
-    name: cfcr-worker-cloud-properties
-    cloud_properties:
-      service_account: ((cfcr_worker_service_account_address))
+    service_account: ((service_account_master))
+
+- type: replace
+  path: /vm_extensions/name=cfcr-master-iam-properties?/cloud_properties/
+  value:
+    service_account: ((service_account_master))
