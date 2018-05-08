@@ -13,7 +13,7 @@ import (
 	"github.com/onsi/gomega/gexec"
 )
 
-var _ = Describe("up", func() {
+var _ = FDescribe("up", func() {
 	var (
 		bbl     actors.BBL
 		boshcli actors.BOSHCLI

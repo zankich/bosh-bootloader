@@ -51,7 +51,7 @@ var _ = Describe("Client", func() {
 
 			route53Client.ListHostedZonesByNameCall.Returns.Output = &awsroute53.ListHostedZonesByNameOutput{
 				HostedZones: []*awsroute53.HostedZone{{
-					Name: awslib.String("the-domain"),
+					Name: awslib.String("domain.com"),
 					Id:   awslib.String("the-id"),
 				}},
 			}
@@ -62,13 +62,13 @@ var _ = Describe("Client", func() {
 		})
 
 		It("fetches dns zone with a given domain", func() {
-			dns := client.RetrieveDNS("the-domain")
+			dns := client.RetrieveDNS("some.domain.com")
 
 			Expect(dns.ID).To(Equal("the-id"))
 			Expect(dns.NameServers).To(Equal("ns1,ns2"))
 
 			Expect(route53Client.ListHostedZonesByNameCall.Receives.Input).To(Equal(&awsroute53.ListHostedZonesByNameInput{
-				DNSName: awslib.String("the-domain"),
+				DNSName: awslib.String("domain.com"),
 			}))
 			Expect(route53Client.GetHostedZoneCall.Receives.Input).To(Equal(&awsroute53.GetHostedZoneInput{
 				Id: awslib.String("the-id"),
@@ -83,12 +83,63 @@ var _ = Describe("Client", func() {
 			})
 
 			It("returns an empty struct", func() {
-				dns := client.RetrieveDNS("the-domain")
+				dns := client.RetrieveDNS("some.domain.com")
 
 				Expect(dns.ID).To(Equal(""))
 				Expect(dns.NameServers).To(Equal(""))
 
 				Expect(route53Client.GetHostedZoneCall.CallCount).To(Equal(0))
+			})
+		})
+
+		Context("when there are multiple dns zones that have the parent domain in the name", func() {
+			BeforeEach(func() {
+				route53Client.ListHostedZonesByNameCall.Returns.Output = &awsroute53.ListHostedZonesByNameOutput{
+					HostedZones: []*awsroute53.HostedZone{{
+						Name: awslib.String("other.domain.com"),
+						Id:   awslib.String("other-id"),
+					}, {
+						Name: awslib.String("domain.com"),
+						Id:   awslib.String("the-id"),
+					}},
+				}
+			})
+
+			It("returns the exact match", func() {
+				dns := client.RetrieveDNS("some.domain.com")
+
+				Expect(route53Client.ListHostedZonesByNameCall.Receives.Input).To(Equal(&awsroute53.ListHostedZonesByNameInput{
+					DNSName: awslib.String("domain.com"),
+				}))
+				Expect(route53Client.GetHostedZoneCall.Receives.Input).To(Equal(&awsroute53.GetHostedZoneInput{
+					Id: awslib.String("the-id"),
+				}))
+
+				Expect(dns.ID).To(Equal("the-id"))
+				Expect(dns.NameServers).To(Equal("ns1,ns2"))
+			})
+		})
+
+		Context("when there are dns zones that have the parent domain in the name", func() {
+			BeforeEach(func() {
+				route53Client.ListHostedZonesByNameCall.Returns.Output = &awsroute53.ListHostedZonesByNameOutput{
+					HostedZones: []*awsroute53.HostedZone{{
+						Name: awslib.String("other.domain.com"),
+						Id:   awslib.String("the-id"),
+					}},
+				}
+			})
+
+			It("returns an empty struct if the dns name is not an exact match", func() {
+				dns := client.RetrieveDNS("some.domain.com")
+
+				Expect(route53Client.ListHostedZonesByNameCall.Receives.Input).To(Equal(&awsroute53.ListHostedZonesByNameInput{
+					DNSName: awslib.String("domain.com"),
+				}))
+				Expect(route53Client.GetHostedZoneCall.CallCount).To(Equal(0))
+
+				Expect(dns.ID).To(Equal(""))
+				Expect(dns.NameServers).To(Equal(""))
 			})
 		})
 
@@ -99,7 +150,7 @@ var _ = Describe("Client", func() {
 				})
 
 				It("returns empty struct", func() {
-					dns := client.RetrieveDNS("the-domain")
+					dns := client.RetrieveDNS("some.domain.com")
 
 					Expect(dns.ID).To(Equal(""))
 					Expect(dns.NameServers).To(Equal(""))
@@ -112,7 +163,7 @@ var _ = Describe("Client", func() {
 				})
 
 				It("returns empty struct", func() {
-					dns := client.RetrieveDNS("the-domain")
+					dns := client.RetrieveDNS("some.domain.com")
 
 					Expect(dns.ID).To(Equal(""))
 					Expect(dns.NameServers).To(Equal(""))

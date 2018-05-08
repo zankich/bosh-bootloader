@@ -13,8 +13,9 @@ variable "existing_zone_ns" {
 }
 
 resource "aws_route53_zone" "env_dns_zone" {
-  name  = "${var.system_domain}"
   count = "${var.existing_zone_id == "" ? 1 : 0}"
+
+  name = "${var.system_domain}"
 
   tags {
     Name = "${var.env_id}-hosted-zone"
@@ -22,16 +23,28 @@ resource "aws_route53_zone" "env_dns_zone" {
 }
 
 locals {
-  zone_id     = "${var.existing_zone_id == "" ? element(concat(aws_route53_zone.env_dns_zone.*.zone_id, list("")), 0) : var.existing_zone_id}"
+  id = "${var.existing_zone_id == "" ? element(concat(aws_route53_zone.env_dns_zone.*.zone_id, list("")), 0) : var.existing_zone_id}"
+
   new_zone_ns = "${join(",", concat(aws_route53_zone.env_dns_zone.*.name_servers, list("")))}"
 }
 
 output "env_dns_zone_name_servers" {
-  value = ["${split(",", var.existing_zone_ns == "" ?  local.new_zone_ns : var.existing_zone_ns)}"]
+  value = ["${split(",", var.existing_zone_id == "" ?  local.new_zone_ns : var.existing_zone_ns)}"]
+}
+
+resource "aws_route53_record" "dns" {
+  count = "${var.existing_zone_id == "" ? 1 : 0}"
+
+  zone_id = "${local.id}"
+  name    = "${var.system_domain}"
+  type    = "NS"
+  ttl     = 300
+
+  records = ["${var.existing_zone_ns}"]
 }
 
 resource "aws_route53_record" "wildcard_dns" {
-  zone_id = "${local.zone_id}"
+  zone_id = "${local.id}"
   name    = "*.${var.system_domain}"
   type    = "CNAME"
   ttl     = 300
@@ -40,7 +53,7 @@ resource "aws_route53_record" "wildcard_dns" {
 }
 
 resource "aws_route53_record" "ssh" {
-  zone_id = "${local.zone_id}"
+  zone_id = "${local.id}"
   name    = "ssh.${var.system_domain}"
   type    = "CNAME"
   ttl     = 300
@@ -49,7 +62,7 @@ resource "aws_route53_record" "ssh" {
 }
 
 resource "aws_route53_record" "bosh" {
-  zone_id = "${local.zone_id}"
+  zone_id = "${local.id}"
   name    = "bosh.${var.system_domain}"
   type    = "A"
   ttl     = 300
@@ -58,7 +71,7 @@ resource "aws_route53_record" "bosh" {
 }
 
 resource "aws_route53_record" "tcp" {
-  zone_id = "${local.zone_id}"
+  zone_id = "${local.id}"
   name    = "tcp.${var.system_domain}"
   type    = "CNAME"
   ttl     = 300
@@ -69,7 +82,7 @@ resource "aws_route53_record" "tcp" {
 resource "aws_route53_record" "iso" {
   count = "${var.isolation_segments}"
 
-  zone_id = "${local.zone_id}"
+  zone_id = "${local.id}"
   name    = "*.iso-seg.${var.system_domain}"
   type    = "CNAME"
   ttl     = 300
