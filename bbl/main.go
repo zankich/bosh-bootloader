@@ -65,7 +65,7 @@ func main() {
 	afs := &afero.Afero{Fs: fs}
 
 	// bbl Configuration
-	garbageCollector := storage.NewGarbageCollector(afs)
+	garbageCollector := storage.NewGarbageCollector(afs, logger)
 	stateStore := storage.NewStore(globals.StateDir, afs, garbageCollector)
 	stateMigrator := storage.NewMigrator(stateStore, afs)
 	newConfig := config.NewConfig(stateBootstrap, stateMigrator, stderrLogger, afs)

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"reflect"
 
 	"github.com/cloudfoundry/bosh-bootloader/fileio"
 	uuid "github.com/nu7hatch/gouuid"
@@ -56,12 +55,9 @@ func (s Store) Set(state State) error {
 		return fmt.Errorf("Stat state dir: %s", err)
 	}
 
-	if reflect.DeepEqual(state, State{}) {
-		err := s.garbageCollector.Remove(s.dir)
-		if err != nil {
-			return fmt.Errorf("Garbage collector clean up: %s", err)
-		}
-		return nil
+	err = s.garbageCollector.Remove(s.dir)
+	if err != nil {
+		return fmt.Errorf("Garbage collector clean up: %s", err)
 	}
 
 	state.Version = s.stateSchema

@@ -19,13 +19,27 @@ var bblManaged = map[string]struct{}{
 	"terraform.tfstate.backup": struct{}{},
 }
 
-type GarbageCollector struct {
-	fs fs
+type printer interface {
+	Printf(message string, a ...interface{})
 }
 
-func NewGarbageCollector(fs fs) GarbageCollector {
+type GarbageCollector struct {
+	fs fs
+	printer printer
+}
+
+func NewGarbageCollector(fs fs, printer printer) GarbageCollector {
 	return GarbageCollector{
 		fs: fs,
+		printer: printer,
+	}
+}
+
+func (g GarbageCollector) warnForUserManagedFiles(dir string) {
+	files, _ := g.fs.ReadDir(dir)
+	for _, f := range files {
+		filePath := filepath.Join(dir, f.Name())
+		g.printer.Printf(filePath)
 	}
 }
 
@@ -42,22 +56,28 @@ func (g GarbageCollector) Remove(dir string) error {
 
 	tfDir := filepath.Join(dir, "terraform")
 	g.fs.Remove(filepath.Join(tfDir, "bbl-template.tf"))
-	g.fs.RemoveAll(filepath.Join(tfDir, ".terraform"))
+	g.fs.RemoveAll(filepath.Join(tfDir, ".terraform")) // if we delete this every time to prompt, we're gonna waste internets
 	g.fs.Remove(tfDir)
+	
+	g.warnForUserManagedFiles(tfDir)
 
 	ccDir := filepath.Join(dir, "cloud-config")
 	g.fs.Remove(filepath.Join(ccDir, "cloud-config.yml"))
 	g.fs.Remove(filepath.Join(ccDir, "ops.yml"))
 	g.fs.Remove(ccDir)
+	g.warnForUserManagedFiles(ccDir)
+
 
 	vDir := filepath.Join(dir, "vars")
 	vFiles, _ := g.fs.ReadDir(vDir)
 	for _, f := range vFiles {
+		filePath := filepath.Join(vDir, f.Name())
 		if _, ok := bblManaged[f.Name()]; ok {
-			_ = g.fs.Remove(filepath.Join(vDir, f.Name()))
+			_ = g.fs.Remove(filePath)
 		}
 	}
-	g.fs.Remove(filepath.Join(dir, "vars"))
+	g.fs.Remove(vDir)
+	g.warnForUserManagedFiles(vDir)
 
 	g.fs.RemoveAll(filepath.Join(dir, ".terraform"))
 	g.fs.Remove(filepath.Join(dir, "create-jumpbox.sh"))

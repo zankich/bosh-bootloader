@@ -89,6 +89,7 @@ type FileIO struct {
 		Receives  struct {
 			Dirname string
 		}
+		Fake	func(string) ([]os.FileInfo, error)
 		Returns struct {
 			FileInfos []os.FileInfo
 			Error     error
@@ -218,7 +219,10 @@ func (f *FileIO) RemoveAll(path string) error {
 func (f *FileIO) ReadDir(dirname string) ([]os.FileInfo, error) {
 	f.ReadDirCall.CallCount++
 	f.ReadDirCall.Receives.Dirname = dirname
-	return f.ReadDirCall.Returns.FileInfos, f.ReadDirCall.Returns.Error
+	if f.ReadDirCall.Fake == nil {
+		return f.ReadDirCall.Returns.FileInfos, f.ReadDirCall.Returns.Error
+	}
+	return f.ReadDirCall.Fake(dirname)
 }
 
 func (f *FileIO) MkdirAll(dir string, perm os.FileMode) error {
