@@ -3,4 +3,5 @@
   value:
     name: lb
     cloud_properties:
+      tags: [concourse]
       target_pool: ((concourse_target_pool))
